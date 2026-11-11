@@ -1,0 +1,154 @@
+.page {
+  padding-bottom: 12px;
+}
+
+.shot {
+  background: #efe4d8;
+  display: grid;
+  place-items: center;
+  padding: 32px 18% 36px;
+}
+
+.shotInner {
+  width: min(100%, 420px);
+}
+
+.kicker {
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.info {
+  padding: 22px var(--pad) calc(var(--nav-h) + 108px);
+}
+
+.info h1 {
+  margin-top: 8px;
+  font-size: clamp(36px, 7vw, 56px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+}
+
+.description {
+  max-width: 38em;
+  margin-top: 14px;
+}
+
+.price {
+  margin-top: 18px;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.facts,
+.points {
+  margin: 22px 0 0;
+  padding: 0;
+}
+
+.facts div,
+.points li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+fieldset {
+  border: 0;
+  margin: 22px 0 0;
+  padding: 0;
+}
+
+legend {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.options button {
+  padding: 8px 0;
+  color: var(--muted);
+  border-bottom: 1px solid transparent;
+}
+
+.options button[data-active='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.buy {
+  position: fixed;
+  z-index: 15;
+  left: 0;
+  right: 0;
+  bottom: var(--nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px var(--pad) calc(12px + env(safe-area-inset-bottom));
+  background: rgba(246, 239, 230, 0.96);
+  border-top: 1px solid var(--line);
+}
+
+.buy strong {
+  display: block;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.buy span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (min-width: 900px) {
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    min-height: calc(100dvh - 64px);
+    padding-bottom: 0;
+  }
+
+  .shot {
+    position: sticky;
+    top: 64px;
+    height: calc(100dvh - 64px);
+    padding: 48px;
+  }
+
+  .info {
+    max-width: 560px;
+    padding: 48px 56px 64px 8px;
+  }
+
+  .buy {
+    position: static;
+    margin-top: 32px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+  }
+}

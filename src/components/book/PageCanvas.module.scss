@@ -1,0 +1,263 @@
+.page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: clamp(11px, 4.8cqi, 15px);
+  container-type: inline-size;
+  background: var(--paper);
+}
+
+.page[data-paper='sand'] {
+  background: #f3e6d4;
+}
+
+.page[data-paper='cool'] {
+  background: #f3f1ec;
+}
+
+.page[data-paper='sage'] {
+  background: #e4ebe4;
+}
+
+.page[data-selected='true'] {
+  outline: 1.5px solid var(--accent);
+  outline-offset: -1.5px;
+  z-index: 1;
+}
+
+.page[data-style='editorial'] {
+  font-family: var(--font);
+}
+
+.page[data-style='film'] .caption,
+.page[data-style='film'] .body {
+  font-style: italic;
+}
+
+.page[data-side='right'] {
+  box-shadow: inset 10px 0 14px rgba(54, 76, 73, 0.05);
+}
+
+.page[data-side='left'] {
+  box-shadow: inset -10px 0 14px rgba(54, 76, 73, 0.045);
+}
+
+.frame {
+  position: absolute;
+  min-width: 0;
+}
+
+.frame[data-selected='true'] {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  z-index: 2;
+}
+
+.page[data-quiet='true'] {
+  pointer-events: none;
+}
+
+.page[data-quiet='true'] .frame[data-selected='true'] {
+  box-shadow: none;
+}
+
+.photoSlot {
+  overflow: hidden;
+  background: #ddd4c8;
+}
+
+.photoSlot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.textSlot {
+  overflow: hidden;
+}
+
+.title,
+.meta,
+.body,
+.caption,
+.editor {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.title {
+  font-size: 1.7em;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.meta {
+  font-family: var(--font);
+  font-size: 0.68em;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.body,
+.caption {
+  font-size: 1em;
+  line-height: 1.35;
+}
+
+.editor {
+  width: 100%;
+  height: 100%;
+  min-height: 1.6em;
+  border: 0;
+  resize: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.page[data-layout='cover'] {
+  display: flex;
+  flex-direction: column;
+}
+
+.page[data-layout='cover'] .frame {
+  position: relative;
+  inset: auto;
+}
+
+.page[data-layout='cover'] [data-slot='a'] {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.page[data-layout='cover'] [data-slot='b'] {
+  padding: 5% 7% 0;
+}
+
+.page[data-layout='cover'] [data-slot='c'] {
+  padding: 2% 7% 6%;
+}
+
+.page[data-layout='bleed'] [data-slot='a'] {
+  inset: 0;
+}
+
+.page[data-layout='hero'] [data-slot='a'] {
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 28%;
+}
+
+.page[data-layout='hero'] [data-slot='b'] {
+  top: 76%;
+  right: 7%;
+  bottom: 6%;
+  left: 7%;
+}
+
+.page[data-layout='stack'] [data-slot='a'] {
+  top: 4%;
+  left: 4%;
+  right: 4%;
+  height: 44%;
+}
+
+.page[data-layout='stack'] [data-slot='b'] {
+  left: 4%;
+  right: 4%;
+  bottom: 4%;
+  height: 44%;
+}
+
+.page[data-layout='trio'] [data-slot='a'] {
+  top: 4%;
+  left: 4%;
+  right: 4%;
+  height: 54%;
+}
+
+.page[data-layout='trio'] [data-slot='b'],
+.page[data-layout='trio'] [data-slot='c'] {
+  bottom: 4%;
+  width: 44.5%;
+  height: 33%;
+}
+
+.page[data-layout='trio'] [data-slot='b'] {
+  left: 4%;
+}
+
+.page[data-layout='trio'] [data-slot='c'] {
+  right: 4%;
+}
+
+.page[data-layout='aside'] [data-slot='a'] {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 62%;
+}
+
+.page[data-layout='aside'] [data-slot='b'] {
+  right: 5%;
+  bottom: 8%;
+  width: 28%;
+  max-height: 70%;
+}
+
+.page[data-layout='aside'][data-side='left'] [data-slot='a'] {
+  left: auto;
+  right: 0;
+}
+
+.page[data-layout='aside'][data-side='left'] [data-slot='b'] {
+  right: auto;
+  left: 5%;
+}
+
+.page[data-layout='opener'] [data-slot='a'] {
+  top: 38%;
+  right: 8%;
+  bottom: 46%;
+  left: 8%;
+}
+
+.page[data-layout='opener'] [data-slot='b'] {
+  top: 58%;
+  right: 8%;
+  bottom: 8%;
+  left: 8%;
+}
+
+.page[data-layout='colophon'] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.7em;
+  padding: 12%;
+}
+
+.page[data-layout='colophon'] .frame {
+  position: relative;
+  width: 100%;
+}
+
+.page[data-layout='colophon'] .title {
+  font-family: var(--font);
+  font-size: 1.15em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}

@@ -1,0 +1,71 @@
+.shell {
+  min-height: 100dvh;
+  background: var(--cream);
+}
+
+.shell[data-studio='true'] {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  padding-bottom: var(--nav-h);
+}
+
+.scene {
+  animation: sceneIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes sceneIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.shell[data-chrome='off'] .main {
+  padding-bottom: 0;
+}
+
+.shell[data-studio='true'] .main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.shell[data-studio='true'] .scene {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  animation-name: sceneFade;
+}
+
+@keyframes sceneFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 900px) {
+  .shell[data-chrome='on'] .main {
+    padding-top: 64px;
+    padding-bottom: 0;
+  }
+
+  .shell[data-home='true'] .main {
+    padding-top: 0;
+  }
+}

@@ -1,36 +1,79 @@
-# Pic-Pac
+# PicPac — прототип Phase 1
 
-Pic-Pac is a Great Stone Hackathon project for photo-based ordering. Users upload photos in a mobile app, receive actionable feedback when an image is blurry or unsuitable, and track their orders. Staff handle assigned orders in an admin dashboard.
+Интерактивный прототип мобильного приложения: фотографии со смартфона превращаются в фотокнигу. Макет собирается в браузере, правки — руками или через AI-чат на демонстрационных правилах. Внешние AI API и оплата не подключены.
 
-## Current repository status (implemented)
-
-At the moment, this repository contains project documentation only (no Flutter/FastAPI source code yet).
-
-## Planned features
-
-- Mobile photo upload flow
-- Image quality checks with actionable feedback (e.g., blurry/unsuitable photo warnings)
-- Order status tracking for users
-- Admin dashboard for staff to manage assigned orders
-- Pinterest-style inspiration gallery
-- Opt-in community photo sharing
-
-## Tech stack
-
-- **Mobile app:** Flutter
-- **Backend API:** FastAPI (Python)
-
-## Local setup
-
-Currently, there is no runnable app/backend code in this repository. Verified setup steps:
+## Запуск
 
 ```bash
-git clone https://github.com/artimonka3/pic-pac.git
-cd pic-pac
+cd ~/pic-pac
+npm install
+npm run dev
 ```
 
-## Team
+Откройте http://127.0.0.1:5173/
 
-- **Arseniy** — Speaker / Creator
-- **Artyom** — Backend
-- **Ivan** — Frontend
+Сборка: `npm run build`, затем `npm run preview`.
+
+## Стек
+
+- React + TypeScript + Vite
+- SCSS Modules
+- React Router
+- Zustand + localStorage
+- Lucide React
+
+## Сценарий
+
+1. Главная → **Создать фотокнигу** или каталог Lite / Classic / Premium.
+2. Загрузка фотографий (`input type="file"`, несколько файлов), тема, стиль, пожелания.
+3. Экран генерации с этапами → готовый макет из отдельных HTML-страниц и блоков.
+4. Редактор: развороты, лента миниатюр, страница, макет, фото, фон, кадр, текст, чат.
+5. **В корзину** → **К оформлению** → подтверждение тестового заказа.
+6. Проекты и профиль хранят состояние в `localStorage`.
+
+Демонстрационные книги уже в списке проектов (минимум 12 страниц, разные компоновки).
+
+## Реализовано
+
+- Главная, каталог, карточка продукта, печать фотографий
+- Пошаговое создание проекта и имитация генерации
+- AI-редактор с отдельными HTML-элементами страниц (не одна картинка)
+- Переключение разворотов и режим «Страница»
+- Лента миниатюр, панель инструментов
+- Правка текста, замена фото, фон страницы, добавление текста, кадрирование
+- Отмена и повтор
+- AI-чат с рабочими командами
+- Проекты: обложка, название, дата изменения, статус, продолжить, удалить, localStorage
+- Корзина с пересчётом суммы
+- Оформление: имя, телефон, email, доставка, адрес, успех
+- Профиль: контакты, настройки, заказы, поддержка
+- Адаптив: мобильная нижняя навигация, десктопная верхняя
+
+## Демонстрационный режим
+
+- Генерация макета — локальная имитация с задержкой, без нейросетей
+- AI-чат — правила по ключевым фразам, не LLM
+- Цены и характеристики — тестовые данные, не оферта
+- Оформление заказа — без оплаты и производства
+- Уведомления в профиле не отправляют письма
+- Демо-фото в `public/photos` (Unsplash); свои снимки — через выбор файлов
+
+### Примеры команд чата
+
+- «Сделай обложку минималистичнее»
+- «Убери текст с этой страницы»
+- «Добавь больше крупных фотографий»
+- «Сделай фон светлее»
+- «Поменяй фотографии местами»
+
+## Структура
+
+```
+src/
+  pages/          # экраны приложения
+  components/     # UI, книга, навигация, загрузка
+  data/           # продукты, темы, библиотека фото
+  lib/            # сборка книги, AI-правила, утилиты
+  store/          # Zustand + persist
+  styles/         # глобальные токены
+```

@@ -1,0 +1,48 @@
+.bar {
+  position: fixed;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--nav-h);
+  padding-bottom: env(safe-area-inset-bottom);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--white);
+  border-top: 1px solid var(--line);
+}
+
+.link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.link svg {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.active {
+  color: var(--accent);
+}
+
+.active svg {
+  transform: translateY(-2px);
+}
+
+.link sup {
+  margin-left: 3px;
+  font-size: 10px;
+}
+
+@media (min-width: 900px) {
+  .bar {
+    display: none;
+  }
+}

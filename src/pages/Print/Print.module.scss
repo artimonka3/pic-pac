@@ -1,0 +1,165 @@
+.page {
+  padding: 22px var(--pad) calc(var(--nav-h) + 108px);
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+header h1 {
+  font-size: clamp(34px, 6vw, 52px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+header p {
+  margin-top: 10px;
+}
+
+fieldset {
+  border: 0;
+  margin: 28px 0 0;
+  padding: 0;
+}
+
+legend {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+fieldset > button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  text-align: left;
+  border-top: 1px solid var(--line);
+}
+
+fieldset > button span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+fieldset > button strong {
+  font-weight: 500;
+}
+
+fieldset > button small,
+fieldset > button em {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
+fieldset > button[data-active='true'] {
+  box-shadow: inset 2px 0 0 var(--accent);
+  padding-left: 12px;
+}
+
+.paper {
+  display: flex;
+  gap: 18px;
+}
+
+.paper button {
+  padding: 10px 0;
+  color: var(--muted);
+  border-bottom: 1px solid transparent;
+}
+
+.paper button[data-active='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.list li {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.list img {
+  width: 54px;
+  height: 54px;
+  object-fit: cover;
+}
+
+.list span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.list div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.list button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+}
+
+.list button:disabled {
+  opacity: 0.35;
+}
+
+footer {
+  position: fixed;
+  z-index: 15;
+  left: 0;
+  right: 0;
+  bottom: var(--nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px var(--pad) calc(12px + env(safe-area-inset-bottom));
+  background: rgba(246, 239, 230, 0.96);
+  border-top: 1px solid var(--line);
+}
+
+footer strong {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+footer span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (min-width: 900px) {
+  footer {
+    position: static;
+    margin-top: 28px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    max-width: 520px;
+  }
+
+  .page {
+    padding-bottom: 64px;
+  }
+}
