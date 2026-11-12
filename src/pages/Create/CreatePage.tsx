@@ -1,14 +1,14 @@
-import { useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PhotoField } from '../../components/upload/PhotoField'
 import { Button } from '../../components/ui/Button'
 import { TestNote } from '../../components/ui/TestNote'
 import { useTitle } from '../../hooks/useTitle'
+import { useMediaUpload } from '../../hooks/useMediaUpload'
 import { getBook, quoteBook, bookProducts } from '../../data/products'
 import { styleById, styles as styleOptions, themeById, themes } from '../../data/themes'
 import { formatPrice, photosLabel } from '../../lib/format'
-import { filesToPhotos } from '../../lib/photos'
+import { photosPassed } from '../../lib/api'
 import { useAppStore } from '../../store/useAppStore'
 import styles from './Create.module.scss'
 
@@ -29,33 +29,16 @@ export function CreatePage() {
   const draft = useAppStore((state) => state.draft)
   const setDraft = useAppStore((state) => state.setDraft)
   const setProduct = useAppStore((state) => state.setProduct)
-  const addPhotos = useAppStore((state) => state.addPhotos)
-  const removePhoto = useAppStore((state) => state.removePhoto)
   const armGeneration = useAppStore((state) => state.armGeneration)
-  const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
+  const upload = useMediaUpload('book')
+  const busy = draft.photos.some((photo) => ['uploading', 'pending'].includes(photo.verification?.status ?? ''))
+  const ready = photosPassed(draft.photos)
   const step = Math.min(draft.step, steps.length - 1)
   const current = steps[step]
   const product = getBook(draft.productId)
 
   function go(next: number) {
     setDraft({ step: next })
-  }
-
-  async function pick(files: File[]) {
-    if (!files.length) return
-    setBusy(true)
-    setMessage('')
-    const result = await filesToPhotos(files)
-    const added = addPhotos(result.photos)
-    const notes: string[] = []
-    if (result.skipped) notes.push('Часть файлов не открылась. Подойдут JPEG и PNG.')
-    if (added < result.photos.length) notes.push('Для макета берём не больше 24 фотографий.')
-    if (!draft.photos.length && added === 0 && result.photos.length === 0) {
-      notes.push('Не удалось открыть эти файлы.')
-    }
-    setMessage(notes.join(' '))
-    setBusy(false)
   }
 
   function generate() {
@@ -134,7 +117,10 @@ export function CreatePage() {
 
           {step === 1 ? (
             <div className={styles.stack}>
-              <PhotoField photos={draft.photos} busy={busy} message={message} onPick={(files) => void pick(files)} onRemove={removePhoto} />
+              <PhotoField
+                photos={draft.photos} busy={busy} message={upload.message}
+                onPick={upload.pick} onRemove={upload.remove} onRetry={upload.retry}
+              />
               {draft.photos.length === 0 ? (
                 <p className={styles.hint}>Без своих фотографий соберём макет на демонстрационных снимках.</p>
               ) : null}
@@ -236,11 +222,11 @@ export function CreatePage() {
           Назад
         </button>
         {step < 5 ? (
-          <Button onClick={() => go(step + 1)} disabled={busy}>
+          <Button onClick={() => go(step + 1)} disabled={step > 0 && !ready}>
             Далее
           </Button>
         ) : (
-          <Button onClick={generate} disabled={busy || !product}>
+          <Button onClick={generate} disabled={!ready || !product}>
             Создать фотокнигу
           </Button>
         )}

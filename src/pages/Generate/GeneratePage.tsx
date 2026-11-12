@@ -7,7 +7,7 @@ import { useAppStore } from '../../store/useAppStore'
 import styles from './Generate.module.scss'
 
 const steps = [
-  { title: 'Анализ фотографий', text: 'Смотрим свет, лица и порядок кадров.' },
+  { title: 'Подготовка фотографий', text: 'Подбираем кадры для макета.' },
   { title: 'Создание структуры', text: 'Делим историю на развороты.' },
   { title: 'Компоновка страниц', text: 'Собираем сетку и поля.' },
   { title: 'Оформление обложки', text: 'Ставим кадр и заголовок.' },

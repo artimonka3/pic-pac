@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { TestNote } from '../../components/ui/TestNote'
 import { useTitle } from '../../hooks/useTitle'
+import { apiMessage, errorCode } from '../../lib/api'
 import { formatDate, formatPrice } from '../../lib/format'
 import { useAppStore } from '../../store/useAppStore'
 import type { CheckoutForm, DeliveryMethod, Order } from '../../types'
@@ -28,12 +29,31 @@ export function CheckoutPage() {
     address: profile.city ? `${profile.city}, ` : '',
   })
   const [done, setDone] = useState<Order | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const submitting = useRef(false)
   const total = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.qty, 0), [cart])
   const valid =
     Boolean(form.name.trim() && form.phone.trim() && form.email.trim()) &&
     (form.delivery === 'pickup' || Boolean(form.address.trim()))
 
-  if (!cart.length && !done) return <Navigate to="/cart" replace />
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!valid || submitting.current) return
+    submitting.current = true
+    setBusy(true)
+    setError('')
+    try {
+      setDone(await placeOrder(form))
+    } catch (error) {
+      setError(apiMessage(errorCode(error)))
+    } finally {
+      submitting.current = false
+      setBusy(false)
+    }
+  }
+
+  if (!cart.length && !done && !busy) return <Navigate to="/cart" replace />
 
   if (done) {
     return (
@@ -83,7 +103,7 @@ export function CheckoutPage() {
     <div className={styles.page}>
       <header>
         <h1>Оформление</h1>
-        <p>Демонстрационная форма. Данные остаются на этом устройстве.</p>
+        <p>Сервер проверит фотографии перед подтверждением тестового заказа.</p>
         <TestNote />
       </header>
 
@@ -106,21 +126,14 @@ export function CheckoutPage() {
         </div>
       </section>
 
-      <form
-        className={styles.form}
-        onSubmit={(event) => {
-          event.preventDefault()
-          const order = placeOrder(form)
-          if (order) setDone(order)
-        }}
-      >
+      <form className={styles.form} onSubmit={submit} aria-busy={busy}>
         <label>
           Имя
-          <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+          <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} maxLength={254} disabled={busy} required />
         </label>
         <label>
           Телефон
-          <input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} required />
+          <input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} maxLength={254} disabled={busy} required />
         </label>
         <label>
           Email
@@ -128,11 +141,13 @@ export function CheckoutPage() {
             type="email"
             value={form.email}
             onChange={(event) => setForm({ ...form, email: event.target.value })}
+            maxLength={254}
+            disabled={busy}
             required
           />
         </label>
 
-        <fieldset>
+        <fieldset disabled={busy}>
           <legend>Доставка</legend>
           <div className={styles.delivery}>
             {deliveries.map((item) => (
@@ -156,6 +171,8 @@ export function CheckoutPage() {
               value={form.address}
               onChange={(event) => setForm({ ...form, address: event.target.value })}
               rows={3}
+              maxLength={500}
+              disabled={busy}
               required
             />
           </label>
@@ -163,8 +180,9 @@ export function CheckoutPage() {
           <p className={styles.pickup}>Самовывоз из демонстрационного пункта. Адрес не нужен.</p>
         )}
 
-        <Button full type="submit" disabled={!valid}>
-          Подтвердить заказ
+        {error ? <p role="alert">{error}</p> : null}
+        <Button full type="submit" disabled={!valid || busy}>
+          {busy ? 'Подтверждаем…' : 'Подтвердить заказ'}
         </Button>
       </form>
     </div>

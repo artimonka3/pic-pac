@@ -1,16 +1,20 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { getBook, quoteBook } from '../data/products'
+import { getBook, getProduct, quoteBook } from '../data/products'
+import { ApiError, confirmOrder, photosPassed, type OrderPayload } from '../lib/api'
 import { buildBook } from '../lib/buildBook'
 import { coverOf } from '../lib/book'
-import { photosLabel, uid } from '../lib/format'
+import { formatUuid, photosLabel, uid } from '../lib/format'
 import type {
   Book,
   CartItem,
   ChatMessage,
   CheckoutForm,
   Draft,
+  LocalPhoto,
+  MediaService,
   Order,
+  OrderSelection,
   PrintDraft,
   Project,
   ProjectStatus,
@@ -19,10 +23,11 @@ import type {
   UserProfile,
 } from '../types'
 
-const PHOTO_LIMIT = 24
+export const PHOTO_LIMIT = 24
 
 function emptyDraft(): Draft {
   return {
+    mediaDraftId: uid(),
     productId: 'classic',
     size: '28×28',
     pages: 36,
@@ -121,6 +126,21 @@ function normalizeProject(project: Project): Project | null {
   }
 }
 
+function bookSelection(project: Project): OrderSelection {
+  const demo = project.photos.length === 0 || project.id === 'seed-city'
+  const draftId = demo ? null : project.mediaDraftId
+  if (!demo && (!draftId || !photosPassed(project.photos))) throw new ApiError('LEGACY_PHOTOS')
+  return {
+    kind: 'book',
+    draft_id: draftId ?? null,
+    media_ids: demo ? [] : project.photos.map((photo) => photo.id),
+    product_id: project.productId,
+    size: project.size,
+    pages: project.pages,
+    demo,
+  }
+}
+
 const sea = makeProject({
   id: 'seed-sea',
   createdAt: '2026-11-02T10:00:00.000Z',
@@ -202,6 +222,7 @@ const home = makeProject({
 type State = {
   projects: Project[]
   cart: CartItem[]
+  cartId: string
   orders: Order[]
   draft: Draft
   printDraft: PrintDraft
@@ -212,8 +233,9 @@ type Actions = {
   beginCreate: (partial?: Partial<Draft>) => void
   setDraft: (partial: Partial<Draft>) => void
   setProduct: (productId: string) => void
-  addPhotos: (photos: Draft['photos']) => number
-  removePhoto: (id: string) => void
+  stagePhotos: (service: MediaService, photos: LocalPhoto[], replaceId?: string) => { draftId: string; photos: LocalPhoto[] }
+  updatePhoto: (service: MediaService, draftId: string, id: string, patch: Pick<LocalPhoto, 'src' | 'verification'>) => void
+  removePhoto: (service: MediaService, id: string) => void
   armGeneration: () => string
   createFromDraft: (token: string) => Project | null
   updateBook: (projectId: string, book: Book) => void
@@ -223,13 +245,11 @@ type Actions = {
   addBookToCart: (projectId: string) => void
   setPrintFormat: (formatId: string) => void
   setPrintPaper: (paper: PrintDraft['paper']) => void
-  addPrintPhotos: (photos: Draft['photos']) => void
   setPrintQty: (id: string, qty: number) => void
-  removePrintPhoto: (id: string) => void
   addPrintToCart: () => boolean
   setCartQty: (id: string, qty: number) => void
   removeCartItem: (id: string) => void
-  placeOrder: (form: CheckoutForm) => Order | null
+  placeOrder: (form: CheckoutForm) => Promise<Order>
   setProfile: (partial: Partial<UserProfile>) => void
 }
 
@@ -268,9 +288,10 @@ export const useAppStore = create<State & Actions>()(
     (set, get) => ({
       projects: [sea, city, home],
       cart: [],
+      cartId: uid(),
       orders: [],
       draft: emptyDraft(),
-      printDraft: { formatId: 'p10', paper: 'Глянец', photos: [] },
+      printDraft: { mediaDraftId: uid(), formatId: 'p10', paper: 'Глянец', photos: [] },
       profile: defaultProfile(),
 
       beginCreate: (partial) => {
@@ -299,15 +320,47 @@ export const useAppStore = create<State & Actions>()(
         }))
       },
 
-      addPhotos: (photos) => {
-        const room = PHOTO_LIMIT - get().draft.photos.length
-        const accepted = photos.slice(0, Math.max(0, room))
-        set((state) => ({ draft: { ...state.draft, photos: [...state.draft.photos, ...accepted] } }))
-        return accepted.length
+      stagePhotos: (service, photos, replaceId) => {
+        const state = get()
+        const draft = service === 'book' ? state.draft : state.printDraft
+        const room = PHOTO_LIMIT - draft.photos.length
+        const accepted = replaceId
+          ? photos.slice(0, draft.photos.some((photo) => photo.id === replaceId) ? 1 : 0)
+          : photos.slice(0, Math.max(0, room))
+
+        if (accepted.length && service === 'book') {
+          const photos = replaceId
+            ? state.draft.photos.map((photo) => photo.id === replaceId ? accepted[0] : photo)
+            : [...state.draft.photos, ...accepted]
+          set({ draft: { ...state.draft, photos, armed: false } })
+        }
+        if (accepted.length && service === 'print') {
+          const photos = replaceId
+            ? state.printDraft.photos.map((photo) => photo.id === replaceId ? { ...accepted[0], qty: photo.qty } : photo)
+            : [...state.printDraft.photos, ...accepted.map((photo) => ({ ...photo, qty: 1 }))]
+          set({ printDraft: { ...state.printDraft, photos } })
+        }
+        return { draftId: draft.mediaDraftId, photos: accepted }
       },
 
-      removePhoto: (id) =>
-        set((state) => ({ draft: { ...state.draft, photos: state.draft.photos.filter((photo) => photo.id !== id) } })),
+      updatePhoto: (service, draftId, id, patch) => set((state) => {
+        const key = service === 'book' ? 'draft' : 'printDraft'
+        const draft = state[key]
+        if (draft.mediaDraftId !== draftId || !draft.photos.some((photo) => photo.id === id)) return state
+        if (key === 'draft') {
+          return { draft: { ...state.draft, photos: state.draft.photos.map((photo) => photo.id === id ? { ...photo, ...patch } : photo) } }
+        }
+        return { printDraft: { ...state.printDraft, photos: state.printDraft.photos.map((photo) => photo.id === id ? { ...photo, ...patch } : photo) } }
+      }),
+
+      removePhoto: (service, id) => set((state) => {
+        if (service === 'book') {
+          const photos = state.draft.photos.filter((photo) => photo.id !== id)
+          return { draft: { ...state.draft, armed: false, photos, mediaDraftId: photos.length ? state.draft.mediaDraftId : uid() } }
+        }
+        const photos = state.printDraft.photos.filter((photo) => photo.id !== id)
+        return { printDraft: { ...state.printDraft, photos, mediaDraftId: photos.length ? state.printDraft.mediaDraftId : uid() } }
+      }),
 
       armGeneration: () => {
         const token = uid()
@@ -317,8 +370,8 @@ export const useAppStore = create<State & Actions>()(
 
       createFromDraft: (token) => {
         const draft = get().draft
-        if (!draft.armed || draft.token !== token) return null
-        const project = makeProject({
+        if (!draft.armed || draft.token !== token || !photosPassed(draft.photos)) return null
+        const project = { ...makeProject({
           productId: draft.productId,
           themeId: draft.themeId,
           styleId: draft.styleId,
@@ -327,7 +380,7 @@ export const useAppStore = create<State & Actions>()(
           pages: draft.pages,
           photos: draft.photos,
           status: 'ready',
-        })
+        }), mediaDraftId: draft.photos.length ? draft.mediaDraftId : undefined }
         set((state) => ({
           projects: [project, ...state.projects],
           draft: emptyDraft(),
@@ -396,35 +449,18 @@ export const useAppStore = create<State & Actions>()(
 
       setPrintFormat: (formatId) => set((state) => ({ printDraft: { ...state.printDraft, formatId } })),
       setPrintPaper: (paper) => set((state) => ({ printDraft: { ...state.printDraft, paper } })),
-      addPrintPhotos: (photos) =>
-        set((state) => ({
-          printDraft: {
-            ...state.printDraft,
-            photos: [...state.printDraft.photos, ...photos.map((photo) => ({ ...photo, qty: 1 }))].slice(0, PHOTO_LIMIT),
-          },
-        })),
       setPrintQty: (id, qty) =>
         set((state) => ({
           printDraft: {
             ...state.printDraft,
-            photos: state.printDraft.photos.map((photo) => (photo.id === id ? { ...photo, qty: Math.max(1, qty) } : photo)),
+            photos: state.printDraft.photos.map((photo) => (photo.id === id ? { ...photo, qty: Math.min(999, Math.max(1, qty)) } : photo)),
           },
         })),
-      removePrintPhoto: (id) =>
-        set((state) => ({
-          printDraft: { ...state.printDraft, photos: state.printDraft.photos.filter((photo) => photo.id !== id) },
-        })),
-
       addPrintToCart: () => {
         const { printDraft } = get()
         const count = printDraft.photos.reduce((sum, photo) => sum + photo.qty, 0)
-        if (!count) return false
-        const prices: Record<string, { name: string; price: number }> = {
-          p10: { name: '10×15', price: 49 },
-          p15: { name: '15×20', price: 89 },
-          p20: { name: '20×30', price: 159 },
-        }
-        const format = prices[printDraft.formatId] ?? prices.p10
+        const format = getProduct(printDraft.formatId)
+        if (!count || !photosPassed(printDraft.photos) || format?.kind !== 'print') return false
         const item: CartItem = {
           id: uid(),
           kind: 'print',
@@ -433,17 +469,24 @@ export const useAppStore = create<State & Actions>()(
           price: format.price * count,
           qty: 1,
           cover: printDraft.photos[0]?.src ?? '',
+          selection: {
+            kind: 'print',
+            draft_id: printDraft.mediaDraftId,
+            product_id: format.id,
+            paper: printDraft.paper,
+            photos: printDraft.photos.map((photo) => ({ media_id: photo.id, qty: photo.qty })),
+          },
         }
         set((state) => ({
           cart: [...state.cart, item],
-          printDraft: { ...state.printDraft, photos: [] },
+          printDraft: { ...state.printDraft, mediaDraftId: uid(), photos: [] },
         }))
         return true
       },
 
       setCartQty: (id, qty) =>
         set((state) => ({
-          cart: state.cart.map((item) => (item.id === id ? { ...item, qty: Math.max(1, qty) } : item)),
+          cart: state.cart.map((item) => (item.id === id ? { ...item, qty: Math.min(999, Math.max(1, qty)) } : item)),
         })),
 
       removeCartItem: (id) => {
@@ -458,37 +501,55 @@ export const useAppStore = create<State & Actions>()(
         }))
       },
 
-      placeOrder: (form) => {
-        const cart = get().cart
-        const name = form.name.trim()
-        if (!cart.length || !name || !form.phone.trim() || !form.email.trim()) return null
-        if (form.delivery !== 'pickup' && !form.address.trim()) return null
-        const order: Order = {
-          id: uid(),
-          number: `PP-${2400 + Math.floor(Math.random() * 7000)}`,
-          createdAt: new Date().toISOString(),
-          name,
+      placeOrder: async (form) => {
+        const { cart, cartId, projects } = get()
+        const payload: OrderPayload = {
+          name: form.name.trim(),
           phone: form.phone.trim(),
           email: form.email.trim(),
           delivery: form.delivery,
-          address: form.delivery === 'pickup' ? 'Самовывоз' : form.address.trim(),
-          total: cart.reduce((sum, item) => sum + item.price * item.qty, 0),
+          address: form.delivery === 'pickup' ? '' : form.address.trim(),
+          items: cart.map((item) => {
+            const project = projects.find((project) => project.id === item.projectId)
+            const selection = project ? bookSelection(project) : item.selection
+            if (!selection) throw new ApiError('LEGACY_PHOTOS')
+            return selection.kind === 'book'
+              ? { ...selection, title: item.title, qty: item.qty }
+              : { ...selection, qty: item.qty }
+          }),
+        }
+        const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify([cartId, payload])))
+        const key = formatUuid(new Uint8Array(hash, 0, 16))
+        const confirmed = await confirmOrder(payload, key)
+        const order: Order = {
+          id: confirmed.id,
+          number: confirmed.number,
+          createdAt: confirmed.created_at,
+          name: payload.name,
+          phone: payload.phone,
+          email: payload.email,
+          delivery: payload.delivery,
+          address: payload.delivery === 'pickup' ? 'Самовывоз' : payload.address,
+          total: confirmed.total,
           items: cart,
         }
         const orderedIds = new Set(cart.map((item) => item.projectId).filter(Boolean) as string[])
-        set((state) => ({
-          orders: [order, ...state.orders],
-          cart: [],
-          projects: state.projects.map((project) =>
-            orderedIds.has(project.id) ? touch(project, { status: 'ordered' }) : project,
-          ),
-          profile: {
-            ...state.profile,
-            name,
-            phone: form.phone.trim(),
-            email: form.email.trim(),
-          },
-        }))
+        set((state) => {
+          const remaining = state.cart.filter((item) => !cart.includes(item))
+          return {
+            cart: remaining,
+            cartId: remaining.length ? state.cartId : uid(),
+            projects: state.projects.map((project) =>
+              orderedIds.has(project.id) ? touch(project, { status: 'ordered' }) : project,
+            ),
+            profile: {
+              ...state.profile,
+              name: payload.name,
+              phone: payload.phone,
+              email: payload.email,
+            },
+          }
+        })
         return order
       },
 
@@ -528,6 +589,7 @@ export const useAppStore = create<State & Actions>()(
         return {
           ...current,
           cart: Array.isArray(data.cart) ? data.cart : [],
+          cartId: data.cartId ?? current.cartId,
           orders,
           projects: projects.length ? projects : current.projects,
           draft: { ...current.draft, ...(data.draft ?? {}), armed: false, token: '' },

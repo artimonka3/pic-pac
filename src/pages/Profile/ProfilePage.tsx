@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTitle } from '../../hooks/useTitle'
+import { orderHistory, type OrderSummary } from '../../lib/api'
 import { formatDate, formatPrice } from '../../lib/format'
 import { useAppStore } from '../../store/useAppStore'
 import styles from './Profile.module.scss'
@@ -13,8 +15,21 @@ const deliveryLabel = {
 export function ProfilePage() {
   useTitle('Профиль')
   const profile = useAppStore((state) => state.profile)
-  const orders = useAppStore((state) => state.orders)
+  const localOrders = useAppStore((state) => state.orders)
   const setProfile = useAppStore((state) => state.setProfile)
+  const [history, setHistory] = useState<OrderSummary[] | null>(null)
+  const [historyError, setHistoryError] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    void orderHistory().then(
+      (orders) => { if (active) setHistory(orders) },
+      () => { if (active) setHistoryError(true) },
+    )
+    return () => { active = false }
+  }, [])
+
+  const orders = [...(history ?? []), ...localOrders.filter((local) => !history?.some((order) => order.id === local.id))]
 
   return (
     <div className={styles.page}>
@@ -68,9 +83,10 @@ export function ProfilePage() {
           <h2>Заказы</h2>
           <Link to="/projects">К проектам</Link>
         </div>
-        {orders.length === 0 ? (
-          <p className={styles.empty}>Заказов пока нет.</p>
-        ) : (
+        {historyError ? <p className={styles.note} role="status">Не удалось загрузить историю с сервера.</p> : null}
+        {history === null && !historyError ? <p className={styles.note} role="status">Загружаем заказы…</p> : null}
+        {history && orders.length === 0 ? <p className={styles.empty}>Заказов пока нет.</p> : null}
+        {orders.length > 0 ? (
           <ul>
             {orders.map((order) => (
               <li key={order.id}>
@@ -83,7 +99,7 @@ export function ProfilePage() {
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
       </section>
 
       <section>

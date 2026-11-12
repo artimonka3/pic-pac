@@ -51,7 +51,18 @@ export type LocalPhoto = {
   id: string
   name: string
   src: string
+  verification?: {
+    status: 'uploading' | 'upload_failed' | 'pending' | 'passed' | 'needs_replacement' | 'failed'
+    code?: string
+    canRetry?: boolean
+  }
 }
+
+export type MediaService = 'book' | 'print'
+
+export type OrderSelection =
+  | { kind: 'book'; draft_id: string | null; media_ids: string[]; product_id: string; size: string; pages: number; demo: boolean }
+  | { kind: 'print'; draft_id: string; product_id: string; paper: PrintDraft['paper']; photos: { media_id: string; qty: number }[] }
 
 export type ChatRole = 'user' | 'assistant'
 
@@ -77,6 +88,7 @@ export type Project = {
   book: Book
   messages: ChatMessage[]
   photos: LocalPhoto[]
+  mediaDraftId?: string
 }
 
 export type CartItem = {
@@ -88,6 +100,7 @@ export type CartItem = {
   price: number
   qty: number
   cover: string
+  selection?: OrderSelection
 }
 
 export type DeliveryMethod = 'courier' | 'pickup' | 'post'
@@ -123,6 +136,7 @@ export type UserProfile = {
 }
 
 export type Draft = {
+  mediaDraftId: string
   productId: string
   size: string
   pages: number
@@ -138,6 +152,7 @@ export type Draft = {
 export type PrintPhoto = LocalPhoto & { qty: number }
 
 export type PrintDraft = {
+  mediaDraftId: string
   formatId: string
   paper: 'Глянец' | 'Матовая'
   photos: PrintPhoto[]

@@ -31,12 +31,12 @@ export function HomePage() {
             <Logo />
           </div>
           <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>PicPac · AI-фотокниги</span>
+            <span className={styles.eyebrow}>PicPac · Фотокниги</span>
             <h1>
               Ваши фотографии.
               <em>Настоящая книга.</em>
             </h1>
-            <p>Загрузите снимки — PicPac отберёт кадры, соберёт историю и оформит развороты.</p>
+            <p>Загрузите снимки. PicPac проверит качество файлов и соберёт макет, который можно отредактировать.</p>
             <div className={styles.actions}>
               <button className={styles.primary} onClick={() => navigate('/create')} type="button">
                 Создать фотокнигу

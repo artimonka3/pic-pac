@@ -53,7 +53,7 @@
   list-style: none;
 }
 
-.grid li {
+.thumb {
   position: relative;
   aspect-ratio: 1;
   background: var(--sand);
@@ -65,7 +65,7 @@
   object-fit: cover;
 }
 
-.grid button {
+.thumb button {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -75,6 +75,43 @@
   place-items: center;
   background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
+}
+
+.feedback {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 6px 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.feedback p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.feedback button,
+.replace {
+  color: var(--ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.replace {
+  position: relative;
+}
+
+.replace:focus-within {
+  outline: 2px solid var(--accent);
+}
+
+.replace input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 @media (min-width: 700px) {

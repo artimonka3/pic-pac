@@ -41,7 +41,7 @@ export function CartPage() {
                     <Minus size={14} />
                   </button>
                   <span>{item.qty}</span>
-                  <button type="button" onClick={() => setCartQty(item.id, item.qty + 1)} aria-label="Больше">
+                  <button type="button" onClick={() => setCartQty(item.id, item.qty + 1)} disabled={item.qty >= 999} aria-label="Больше">
                     <Plus size={14} />
                   </button>
                 </div>
